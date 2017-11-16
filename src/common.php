@@ -30,28 +30,32 @@ Loader::addNamespace('addons', TWOTHINK_ADDON_PATH);
 
 // 闭包初始化行为
 Hook::add('app_init', function () {
-    // 获取系统配置
-    $data = App::$debug ? [] : Cache::get('hooks');
-    if (empty($data)) {
-        $hooks = Db::name('Hooks')->column('name,addons');
-        foreach ($hooks as $key => $value) {
-            if($value){
-                $map['status']  =   1;
-                $names          =   explode(',',$value);
-                $map['name']    =   array('IN',$names);
-                $data = Db::name('Addons')->where($map)->column('id,name');
-                if($data){
-                    $addons_arr = array_intersect($names, $data);
-                    $addons[$key] = array_map('get_addon_class',$addons_arr);
-                    Hook::add($key,$addons[$key]);
+    try {
+        // 获取系统配置
+        $data = App::$debug ? [] : Cache::get('hooks');
+        if (empty($data)) {
+            $hooks = Db::name('Hooks')->column('name,addons');
+            foreach ($hooks as $key => $value) {
+                if ($value) {
+                    $map['status'] = 1;
+                    $names = explode(',', $value);
+                    $map['name'] = array('IN', $names);
+                    $data = Db::name('Addons')->where($map)->column('id,name');
+                    if ($data) {
+                        $addons_arr = array_intersect($names, $data);
+                        $addons[$key] = array_map('get_addon_class', $addons_arr);
+                        Hook::add($key, $addons[$key]);
+                    }
                 }
             }
+            Cache::set('hooks', $addons);
+        } else {
+            Hook::import($data, false);
         }
-        Cache::set('hooks',$addons);
-    } else {
-        Hook::import($data, false);
     }
-
+    catch (Exception $e){
+//        dump($e);
+    }
 });
 
 /**
