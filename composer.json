@@ -1,0 +1,35 @@
+{
+    "name": "twothink/twothink-addons",
+    "description": "addons package for twothink",
+    "homepage": "https://github.com/twothink/twothink-addons",
+    "license": "Apache-2.0",
+    "minimum-stability": "dev",
+    "version": "1.0.0",
+    "authors": [
+        {
+            "name": "593657688",
+            "email": "593657688@qq.com"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/twothink/twothink-addons/issues"
+    },
+    "require": {
+        "php": ">=5.4.0",
+        "topthink/think-helper": ">=1.0.4",
+        "topthink/think-installer": ">=1.0.10"
+    },
+    "autoload": {
+        "psr-4": {
+            "think\\": "src/"
+        },
+        "files": [
+            "src/common.php"
+        ]
+    },
+    "extra": {
+        "think-config": {
+            "addons": "src/config.php"
+        }
+    }
+}
