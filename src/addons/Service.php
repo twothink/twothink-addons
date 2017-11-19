@@ -9,9 +9,11 @@
 namespace think\addons;
 
 use think\Session;
+use think\Db;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use think\Exception;
+use think\exception\PDOException;
 use com\File;
 /**
  * 插件服务
@@ -188,7 +190,8 @@ class Service{
                     File::copy_dir($addonDir . $dir, ROOT_PATH . $dir);
                 }
             }
-
+            // SQL导入
+            self::execute_sql_file(TWOTHINK_ADDON_PATH . $name . DS . 'install.sql');
         }
         catch (AddonsException $e){
             throw new AddonsException($e->getMessage(), $e->getCode(), $e->getData());
@@ -228,31 +231,61 @@ class Service{
             if (! $addon->uninstall()) {
                 throw new Exception('执行插件预卸载操作失败' . Session::get ( 'addons_uninstall_error' ));
             }
+
+            // 移除插件基础资源目录
+            $delstaticDir = self::getToStaticDir($name);
+            if (is_dir($delstaticDir))
+            {
+                File::del_dir($delstaticDir);
+            }
+
+            // 移除插件全局资源文件
+            if ($iscover)
+            {
+                $list = self::getFilesList($name);
+                foreach ($list as $k => $v)
+                {
+                    @unlink(ROOT_PATH . $v);
+                }
+            }
+            // SQL执行
+            self::execute_sql_file(TWOTHINK_ADDON_PATH . $name . DS . 'uninstall.sql');
+            // 移除插件目录
+//        File::del_dir(TWOTHINK_ADDON_PATH . $name);
         }
         catch (Exception $e)
         {
             throw new Exception($e->getMessage());
         }
-        // 移除插件基础资源目录
-        $delstaticDir = self::getToStaticDir($name);
-        if (is_dir($delstaticDir))
-        {
-            File::del_dir($delstaticDir);
-        }
 
-        // 移除插件全局资源文件
-        if ($iscover)
+        return true;
+    }
+    /**
+     * 执行SQL文件
+     * $sql_path sql文件路径
+     * $prefix 替换表前缀
+     * @auth 小矮人 82550565@qq.com
+     */
+    public static function execute_sql_file($sql_path, $prefix = '')
+    {
+        if (is_file($sql_path))
         {
-            $list = self::getFilesList($name);
-            foreach ($list as $k => $v)
+            try
             {
-                @unlink(ROOT_PATH . $v);
+                //替换表前缀
+                $orginal = config('database.prefix');
+                if(empty($prefix))
+                    $prefix = $orginal;
+
+                $sql = str_replace(" `{$orginal}"," `{$prefix}", file_get_contents($sql_path));
+                // 导入SQL
+                Db::getPdo()->exec($sql);
+            }
+            catch (PDOException $e)
+            {
+                throw new Exception($e->getMessage());
             }
         }
-
-        // 移除插件目录
-//        File::del_dir(TWOTHINK_ADDON_PATH . $name);
-
         return true;
     }
 }

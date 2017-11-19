@@ -120,9 +120,9 @@ function get_addon_config($name)
  * 插件显示内容里生成访问插件的url
  * @param $url
  * @param array $param
+ * @return bool|string
  * @param bool|string $suffix 生成的URL后缀
  * @param bool|string $domain 域名
- * @return bool|string
  */
 function addons_url($url, $param = [], $suffix = true, $domain = false)
 {
