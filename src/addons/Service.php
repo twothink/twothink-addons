@@ -8,13 +8,13 @@
 // +----------------------------------------------------------------------
 namespace think\addons;
 
-use think\Session;
+use think\facade\Session;
 use think\Db;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use think\Exception;
-use think\exception\PDOException;
 use com\File;
+use think\facade\Env;
 /**
  * 插件服务
  * @Author: 艺品网络  82550565@qq.com
@@ -59,7 +59,7 @@ class Service{
         if ($list)
         {
             //发现冲突文件，抛出异常
-            throw new AddonsException("发现冲突文件", -2, ['conflictfile' => $list]);
+            throw new AddonsException("发现冲突文件", -2, ['conf_lict_file' => $list]);
         }
         return true;
     }
@@ -87,7 +87,7 @@ class Service{
         // 扫描插件目录是否有覆盖的文件
         foreach (self::getCheckDirs() as $k => $dir)
         {
-            $checkDir = ROOT_PATH . DS . $dir . DS;
+            $checkDir = dirname(realpath(Env::get('app_path'))) . DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR;
 
             if (!is_dir($checkDir))
                 continue;
@@ -106,7 +106,7 @@ class Service{
                         $path = str_replace($addonDir, '', $filePath);
                         if ($isTesting)
                         {
-                            if (is_file(ROOT_PATH . $path))
+                            if (is_file(dirname(realpath(Env::get('app_path'))) . DIRECTORY_SEPARATOR  . $path))
                             {
                                 $list[] = $path;
                             }
@@ -129,7 +129,7 @@ class Service{
      */
     protected static function getStaticDir($name)
     {
-        return TWOTHINK_ADDON_PATH . $name . DS . 'static' . DS;
+        return TWOTHINK_ADDON_PATH . $name . DIRECTORY_SEPARATOR . 'static' . DIRECTORY_SEPARATOR;
     }
     /**
      * 获取插件静态资源目标文件夹
@@ -138,7 +138,7 @@ class Service{
      */
     protected static function getToStaticDir($name)
     {
-        $staticDir = ROOT_PATH . str_replace("/", DS, "public/static/addons/{$name}/");
+        $staticDir = dirname(realpath(Env::get('app_path'))).DIRECTORY_SEPARATOR. str_replace("/", DIRECTORY_SEPARATOR, "public/static/addons/{$name}/");
         if (!is_dir($staticDir))
         {
             mkdir($staticDir, 0755, true);
@@ -187,7 +187,7 @@ class Service{
             {
                 if (is_dir($addonDir . $dir))
                 {
-                    File::copy_dir($addonDir . $dir, ROOT_PATH . $dir);
+                    File::copy_dir($addonDir . $dir, dirname(realpath(Env::get('app_path'))) . DIRECTORY_SEPARATOR  . $dir);
                 }
             }
             // SQL导入
@@ -245,13 +245,13 @@ class Service{
                 $list = self::getFilesList($name);
                 foreach ($list as $k => $v)
                 {
-                    @unlink(ROOT_PATH . $v);
+                    @unlink(dirname(realpath(Env::get('app_path'))) . DIRECTORY_SEPARATOR  . $v);
                 }
             }
             // SQL执行
             self::execute_sql_file(TWOTHINK_ADDON_PATH . $name . DS . 'uninstall.sql');
             // 移除插件目录
-//        File::del_dir(TWOTHINK_ADDON_PATH . $name);
+            //File::del_dir(TWOTHINK_ADDON_PATH . $name);
         }
         catch (Exception $e)
         {
@@ -270,20 +270,24 @@ class Service{
     {
         if (is_file($sql_path))
         {
-            try
-            {
-                //替换表前缀
-                $orginal = config('database.prefix');
-                if(empty($prefix))
-                    $prefix = $orginal;
+            //读取SQL文件
+            $sql = file_get_contents($sql_path);
+            $sql = str_replace("\r", "\n", $sql);
+            $sql = explode(";\n", $sql);
 
-                $sql = str_replace(" `{$orginal}"," `{$prefix}", file_get_contents($sql_path));
-                // 导入SQL
-                Db::getPdo()->exec($sql);
-            }
-            catch (PDOException $e)
-            {
-                throw new Exception($e->getMessage());
+            //替换表前缀
+            $orginal = config('database.prefix');
+            if(empty($prefix))
+                $prefix = $orginal;
+            $sql     = str_replace(" `{$orginal}", " `{$prefix}", $sql);
+
+            //开始执行sql
+            foreach ($sql as $value) {
+                $value = trim($value);
+                if (empty($value)) {
+                    continue;
+                }
+                Db()->execute($value);
             }
         }
         return true;

@@ -6,22 +6,11 @@
 // +----------------------------------------------------------------------
 // | Author: 艺品网络  82550565@qq.com <www.twothink.cn> 
 // +----------------------------------------------------------------------
-namespace think\addons;
+namespace think\addons\facade;
 
-use think\Exception;
-
-/**
- * 插件异常处理类
- * @package think\addons
- */
-class AddonsException extends Exception
-{
-
-    public function __construct($message, $code = 0, $data = '')
+class Addons extends \think\Facade{
+    protected static function getFacadeClass()
     {
-        $this->message  = $message;
-        $this->code     = $code;
-        $this->data     = $data;
+        return 'think\addons\model\Addons';
     }
-
 }

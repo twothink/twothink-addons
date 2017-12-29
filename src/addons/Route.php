@@ -8,9 +8,8 @@
 // +----------------------------------------------------------------------
 namespace think\addons;
 
-use think\Hook;
-use think\Request;
-use think\Config;
+use think\facade\Hook;
+use think\facade\Config;
 /**
  * 插件执行默认控制器
  * Class AddonsController
@@ -21,16 +20,16 @@ class Route extends Controller
     /**
      * 插件执行
      */
-    public function execute()
+    public function execute($addon = null, $controller = null, $action = null)
     {
-        $request = Request::instance();
+        $request = Request();
         // 是否自动转换控制器和操作名
         $convert = Config::get('url_convert');
-        $filter = $convert ? 'strtolower' : '';
+        $filter = $convert ? 'strtolower' : 'trim';
         // 处理路由参数
-        $addon = $request->param('addon', '', $filter);
-        $controller = $request->param('controller', 'index', $filter);
-        $action = $request->param('action', 'index', $filter);
+        $addon = $addon ? call_user_func($filter, $addon) : '';
+        $controller = $controller ? call_user_func($filter, $controller) : 'index';
+        $action = $action ? call_user_func($filter, $action) : 'index';
 
         if (!empty($addon) && !empty($controller) && !empty($action)) {
             // 设置当前请求的控制器、操作
@@ -46,8 +45,8 @@ class Route extends Controller
                 if (!method_exists($model, $action)) {
                     abort(500, lang('Controller Class Method Not Exists'));
                 }
-                // 监听addons_init
-                Hook::listen('addons_init', $this);
+                // 监听addon_init
+                Hook::listen('addon_init', $this);
                 return call_user_func_array([$model, $action], [$request]);
             } else {
                 abort(500, lang('Controller Class Not Exists'));

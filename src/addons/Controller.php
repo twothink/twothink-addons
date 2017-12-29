@@ -10,7 +10,7 @@
 namespace think\addons;
 
 use think\Request;
-use think\Config;
+use think\facade\Config;
 use think\Loader;
 
 /**
@@ -47,7 +47,7 @@ class Controller extends \think\Controller
     public function __construct(Request $request = null)
     {
         // 生成request对象
-        $this->request = is_null($request) ? Request::instance() : $request;
+        $this->request = is_null($request) ? Request() : $request;
         // 初始化配置信息
         $this->config = Config::get('template') ?: $this->config;
         // 是否自动转换控制器和操作名
